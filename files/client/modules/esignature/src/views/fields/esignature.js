@@ -113,51 +113,59 @@ Espo.define('esignature:views/fields/esignature', 'views/fields/base', function 
         },
         
         data: function () { // overrides "data" function from base.js
+            // Get parent's properly formatted data (includes label, name, etc.)
+            var data = Dep.prototype.data.call(this);
+            
+            // Add only our custom properties
             var imageSource = this.getValueForDisplay();
-            var data = {
-                scope: this.model.name,
-                name: this.name,
-                defs: this.defs,
-                params: this.params,
-                value: this.getValueForDisplay(),
-                imageSource: imageSource                
-            };   
+            data.imageSource = imageSource;
+            data.value = this.getValueForDisplay();
+            
             // signature fields can not be edited manually, force detail mode
             if(this.mode !== "detail") {
                 this.setMode("detail");
             }
+            
             return data;
         },
 
         initInlineEsignatureEdit: function () { // custom function equivalent to "initInlineEdit" at base.js   
-            var $cell = this.getCellElement();
+            var cellElement = this.getCellElement();
+            
+            // Ensure we have a jQuery object - wrap if necessary
+            var $cell = cellElement && cellElement.jquery ? cellElement : $(cellElement);
+            
             var $editLink = $(
                 '<button type="button" class="pull-right inline-edit-link hidden" aria-label="Edit" style="background-color:unset;border:unset;">' +
                     '<span class="fas fa-pencil-alt fa-sm"></span>' +
                 '</button>'
-                );
-            if ($cell.length === 0 || typeof(this.model.get(this.name))=== 'undefined') {
+            );
+            
+            if ($cell.length === 0 || typeof(this.model.get(this.name)) === 'undefined') {
                 this.listenToOnce(this, 'after:render', this.initInlineEsignatureEdit, this);
                 return;
             }
+            
             // if the signature field already has a value do not add the inline edit link and set the field as readonly
             if(this.model.get(this.name)) {
                 this.readOnly = true;
                 return;                
             }
+            
             // after the element has been rendered, add the hidden pencil icon link
             $cell.prepend($editLink);
+            
             $editLink.on('click', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
                 // when clicked, call the custom signature field inline edit function
                 this.inlineEsignatureEdit(); 
-            // bind the functionality to the pencil icon link    
             }.bind(this));
+            
             $cell.on('mouseenter', function (e) {
                 e.stopPropagation();
                 if (this.disabled || this.readOnly || this._isInlineEditMode) {
-                        return;
+                    return;
                 }
                 if (this.mode === 'detail') {
                     $editLink.removeClass('hidden');
