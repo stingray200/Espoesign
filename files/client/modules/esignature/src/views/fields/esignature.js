@@ -181,7 +181,9 @@ Espo.define('esignature:views/fields/esignature', 'views/fields/base', function 
                 SignHere: {
                     renderer: function () {
                     // eigenes Hinweis-Element zurückgeben
-                    const label = this.translate('signHere', 'messages', 'Global');
+                    const label = this.getLanguage().translate('signHere', 'messages', 'Global') || 
+                                  this.getLanguage().translate('Sign Here', 'labels', 'Global') || 
+                                  'Sign Here';
 
                     const $badge = $('<div/>', {
                         class: 'jsign-signhere-badge',
@@ -212,7 +214,10 @@ Espo.define('esignature:views/fields/esignature', 'views/fields/base', function 
             // compare the amount of strokes to make sure there's a signature to be saved
             const strokes = this.$el.jSignature('getData', 'native');
             if (!strokes.length) {
-                alert(this.translate('noSignatureEntered', 'messages', 'Global'));
+                const noSigMsg = this.getLanguage().translate('noSignatureEntered', 'messages', 'Global') || 
+                                 this.getLanguage().translate('No signature was entered', 'messages', 'Global') ||
+                                 'No signature was entered';
+                alert(noSigMsg);
                 return;
             }
 
@@ -220,7 +225,9 @@ Espo.define('esignature:views/fields/esignature', 'views/fields/base', function 
             var d = new Date();
             var timestamp = eSignatureISODateString(d);             
             // prepare the signature drawing to be stored in the database integrating the timestamp
-            var translatedLabel = this.translate('electronicallySignedOn', 'messages', 'Global');
+            var translatedLabel = this.getLanguage().translate('electronicallySignedOn', 'messages', 'Global') || 
+                                  this.getLanguage().translate('Electronically Signed On', 'labels', 'Global') ||
+                                  'Electronically Signed On';
             var imageSource = '<img src="' + this.$el.jSignature('getData') + '"/>' +
                             '<div style="margin-top:-0.5em;font-size:1em;font-style:italic;">' +
                             translatedLabel + ' ' + timestamp +
