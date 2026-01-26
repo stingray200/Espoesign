@@ -178,33 +178,19 @@ Espo.define('esignature:views/fields/esignature', 'views/fields/base', function 
             }.bind(this));
         },
 
-        inlineEsignatureEdit: function() { // custom function equivalent to "inlineEdit" at base.js     
-            this._isInlineEditMode = true;       
-            // add css class esignature to the field element
-            this.$el.addClass('eSignature');
-            // initialize jSignature plug-in to display canvas input
-            var $sigDiv = this.$el.jSignature({
-                UndoButton: true,
-                color: 'rgb(5, 1, 135)',
-                SignHere: {
-                    renderer: function () {
-                    // eigenes Hinweis-Element zurückgeben
-                    const label = this.getLanguage().translate('signHere', 'messages', 'Global') || 
-                                  this.getLanguage().translate('Sign Here', 'labels', 'Global') || 
-                                  'Sign Here';
-
-                    const $badge = $('<div/>', {
-                        class: 'jsign-signhere-badge',
-                        text: label
-                        });
-                    return $badge;
-                    }.bind(this) // bind, damit this.translate() funktioniert
-                }
+        inlineEsignatureEdit: function() {
+            this._isInlineEditMode = true;
+            
+            this.createView('signatureModal', 'esignature:views/modals/signature', {
+                fieldName: this.name,
+                fieldLabel: this.translate(this.name, 'fields', this.model.entityType)
+            }, (view) => {
+                view.render();
+                
+                this.listenToOnce(view, 'signature-saved', (signatureData) => {
+                    this.saveSignature(signatureData);
                 });
-            // get the blank canvass code value to compare against a filled canvas
-            this.blankCanvassCode = $sigDiv.jSignature('getData');
-            // add the inline action links ("Update" and "Cancel")
-            this.addInlineEditLinks(); // function inherited from base.js               
+            });
         },
         
         inlineEditClose: function () { // substitutes same function at base.js
@@ -218,25 +204,15 @@ Espo.define('esignature:views/fields/esignature', 'views/fields/base', function 
             this.reRender(true);
         },
         
-        inlineEditSave: function () { // substitutes same function at base.js   
-            // compare the amount of strokes to make sure there's a signature to be saved
-            const strokes = this.$el.jSignature('getData', 'native');
-            if (!strokes.length) {
-                const noSigMsg = this.getLanguage().translate('noSignatureEntered', 'messages', 'Global') || 
-                                 this.getLanguage().translate('No signature was entered', 'messages', 'Global') ||
-                                 'No signature was entered';
-                alert(noSigMsg);
-                return;
-            }
-
-            // register the signature time stamp
+        saveSignature: function(signatureData) {
             var d = new Date();
-            var timestamp = eSignatureISODateString(d);             
-            // prepare the signature drawing to be stored in the database integrating the timestamp
+            var timestamp = eSignatureISODateString(d);
+            
             var translatedLabel = this.getLanguage().translate('electronicallySignedOn', 'messages', 'Global') || 
                                   this.getLanguage().translate('Electronically Signed On', 'labels', 'Global') ||
                                   'Electronically Signed On';
-            var imageSource = '<img src="' + this.$el.jSignature('getData') + '"/>' +
+            
+            var imageSource = '<img src="' + signatureData + '" style="max-width:300px;height:auto;"/>' +
                             '<div style="margin-top:-0.5em;font-size:1em;font-style:italic;">' +
                             translatedLabel + ' ' + timestamp +
                             '</div>';
@@ -244,30 +220,23 @@ Espo.define('esignature:views/fields/esignature', 'views/fields/base', function 
             this.notify('Saving...');
             var self = this;
             var model = this.model;
-            var prev = this.initialAttributes;
             var data = model.attributes;
-            // store the image code as the field value
             data[this.name] = imageSource;
-            // persist the model with the updated field value
+            
             this.model.save(data, {
                 success: function () {
                     self.trigger('after:save');
                     model.trigger('after:save');
                     self.notify('Saved', 'success');
+                    self.readOnly = true;
+                    self.inlineEditClose();
                 },
                 error: function () {
-                    alert("Error in saving to DB");
-                    self.notify('Error occured', 'error');
-                    // undo all field value changes
-                    model.set(prev, {silent: true});
-                    // re-render with the original values
-                    self.render();
+                    Espo.Ui.error("Error saving signature");
+                    self.notify('Error occurred', 'error');
                 },
                 patch: true
             });
-            // set field as readonly
-            this.readOnly = true;
-            this.inlineEditClose();
         }
          
     });
