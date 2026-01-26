@@ -80,7 +80,8 @@ Espo.define('esignature:views/fullscreen-signature', 'view', function (Dep) {
             
             if ($canvas.length === 0) return;
             
-            var canvasHeight = window.innerHeight - 200;
+            var HEADER_FOOTER_HEIGHT = 200;
+            var canvasHeight = window.innerHeight - HEADER_FOOTER_HEIGHT;
             
             this.$sigDiv = $canvas.jSignature({
                 UndoButton: true,
@@ -90,7 +91,7 @@ Espo.define('esignature:views/fullscreen-signature', 'view', function (Dep) {
                 height: canvasHeight
             });
             
-            this.blankCanvassCode = this.$sigDiv.jSignature('getData');
+            this.blankCanvasCode = this.$sigDiv.jSignature('getData');
             
             this.$sigDiv.on('change', () => {
                 const strokes = this.$sigDiv.jSignature('getData', 'native');
@@ -102,15 +103,23 @@ Espo.define('esignature:views/fullscreen-signature', 'view', function (Dep) {
 
         enterFullscreen: function() {
             var elem = this.$el[0];
+            var fullscreenPromise = null;
             
             if (elem.requestFullscreen) {
-                elem.requestFullscreen();
+                fullscreenPromise = elem.requestFullscreen();
             } else if (elem.webkitRequestFullscreen) {
-                elem.webkitRequestFullscreen();
+                fullscreenPromise = elem.webkitRequestFullscreen();
             } else if (elem.mozRequestFullScreen) {
-                elem.mozRequestFullScreen();
+                fullscreenPromise = elem.mozRequestFullScreen();
             } else if (elem.msRequestFullscreen) {
-                elem.msRequestFullscreen();
+                fullscreenPromise = elem.msRequestFullscreen();
+            }
+            
+            if (fullscreenPromise && fullscreenPromise.catch) {
+                fullscreenPromise.catch((err) => {
+                    console.warn('Fullscreen request failed:', err);
+                    Espo.Ui.warning('Fullscreen mode not available. Continuing in normal mode.');
+                });
             }
             
             if (screen.orientation && screen.orientation.lock) {

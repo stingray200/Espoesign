@@ -195,6 +195,10 @@ Espo.define('esignature:views/fields/esignature', 'views/fields/base', function 
                     this._isInlineEditMode = false;
                     this.clearView('fullscreenSignature');
                 });
+            }).catch((err) => {
+                this._isInlineEditMode = false;
+                console.error('Error loading fullscreen signature view:', err);
+                this.notify('Error loading signature interface. Please try again.', 'error');
             });
         },
         
