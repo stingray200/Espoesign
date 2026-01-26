@@ -181,18 +181,20 @@ Espo.define('esignature:views/fields/esignature', 'views/fields/base', function 
         inlineEsignatureEdit: function() {
             this._isInlineEditMode = true;
             
-            this.createView('signatureModal', 'esignature:views/modals/signature', {
+            this.createView('fullscreenSignature', 'esignature:views/fullscreen-signature', {
                 fieldName: this.name,
-                fieldLabel: this.translate(this.name, 'fields', this.model.entityType)
+                fieldLabel: this.translate(this.name, 'fields', this.model.entityType) || 'Signature'
             }, (view) => {
                 view.render();
                 
                 this.listenToOnce(view, 'signature-saved', (signatureData) => {
                     this.saveSignature(signatureData);
                 });
-            }).catch(() => {
-                this._isInlineEditMode = false;
-                this.notify('Error loading signature modal', 'error');
+                
+                this.listenToOnce(view, 'close', () => {
+                    this._isInlineEditMode = false;
+                    this.clearView('fullscreenSignature');
+                });
             });
         },
         
