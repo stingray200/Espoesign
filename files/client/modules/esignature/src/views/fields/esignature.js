@@ -190,6 +190,9 @@ Espo.define('esignature:views/fields/esignature', 'views/fields/base', function 
                 this.listenToOnce(view, 'signature-saved', (signatureData) => {
                     this.saveSignature(signatureData);
                 });
+            }).catch(() => {
+                this._isInlineEditMode = false;
+                this.notify('Error loading signature modal', 'error');
             });
         },
         
